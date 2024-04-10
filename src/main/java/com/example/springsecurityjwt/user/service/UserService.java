@@ -29,7 +29,7 @@ public class UserService {
     private final BCryptPasswordEncoder passwordEncoder;
     private static final Long REFRESH_TOKEN_EXP = Long.parseLong(System.getenv("JWT_REFRESH_TOKEN_EXP"));
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ResponseEntity<?> login(String userAgent, UserLoginReq userLoginReq) {
         User user = userRepository
                 .findByUsername(userLoginReq.getUsername())
@@ -38,6 +38,10 @@ public class UserService {
         if (passwordEncoder.matches(userLoginReq.getPassword(), user.getPassword())) {
             String accessToken = JwtProvider.createAccessToken(user);
             String refreshToken = JwtProvider.createRefreshToken(user);
+
+            // RefreshToken Redis DB 삭제
+            refreshTokenRedisRepository.findById(user.getId())
+                    .ifPresent(refreshTokenRedisRepository::delete);
 
             // RefreshToken Redis DB 저장
             RefreshTokenRedisReq refreshTokenRedisReq = new RefreshTokenRedisReq(refreshToken, user.getId(), REFRESH_TOKEN_EXP);

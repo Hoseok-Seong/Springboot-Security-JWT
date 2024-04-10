@@ -6,5 +6,4 @@ import org.springframework.data.repository.CrudRepository;
 import java.util.Optional;
 
 public interface RefreshTokenRedisRepository extends CrudRepository<RefreshTokenRedis, Long> {
-    Optional<RefreshTokenRedis> findById(Long userId);
 }
