@@ -1,0 +1,38 @@
+package com.example.springsecurityjwt.user.service;
+
+import com.example.springsecurityjwt.global.jwt.JwtProvider;
+import com.example.springsecurityjwt.user.dto.NewAccessTokenReq;
+import com.example.springsecurityjwt.user.dto.NewAccessTokenResp;
+import com.example.springsecurityjwt.user.entity.RefreshTokenRedis;
+import com.example.springsecurityjwt.user.entity.User;
+import com.example.springsecurityjwt.user.repository.RefreshTokenRedisRepository;
+import com.example.springsecurityjwt.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class TokenService {
+    private final UserRepository userRepository;
+    private final RefreshTokenRedisRepository refreshTokenRedisRepository;
+
+    @Transactional
+    public ResponseEntity<?> generateNewAccessToken(String userAgent, NewAccessTokenReq newAccessTokenReq) {
+        User user = userRepository
+                .findById(newAccessTokenReq.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 유저가 없습니다"));
+
+        RefreshTokenRedis refreshTokenRedis = refreshTokenRedisRepository.findById((newAccessTokenReq.getUserId()))
+                .orElseThrow(() -> new IllegalArgumentException("Refresh 토큰의 유효기간이 만료되었거나 존재하지 않습니다"));
+
+        if (!refreshTokenRedis.getRefreshToken().equals(newAccessTokenReq.getRefreshToken())) {
+            ResponseEntity.badRequest().body("Refresh 토큰이 일치하지 않습니다. 다시 로그인해주세요.");
+        }
+
+        String accessToken = JwtProvider.createAccessToken(user);
+
+        return ResponseEntity.ok().header(JwtProvider.ACCESS_TOKEN_HEADER, accessToken).body(new NewAccessTokenResp(user));
+    }
+}

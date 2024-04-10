@@ -49,7 +49,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             log.error("토큰 검증 실패");
             throw sve;
         } catch (TokenExpiredException tee) {
-            log.error("Access 토큰 만료");
+            log.error("토큰 만료");
             throw tee;
         } finally {
             chain.doFilter(request, response);
