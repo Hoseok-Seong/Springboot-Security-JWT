@@ -1,11 +1,13 @@
 package com.example.springsecurityjwt.user.service;
 
 import com.example.springsecurityjwt.global.jwt.JwtProvider;
+import com.example.springsecurityjwt.user.dto.RefreshTokenRedisReq;
 import com.example.springsecurityjwt.user.dto.UserJoinReq;
 import com.example.springsecurityjwt.user.dto.UserJoinResp;
 import com.example.springsecurityjwt.user.dto.UserLoginReq;
 import com.example.springsecurityjwt.user.dto.UserLoginResp;
 import com.example.springsecurityjwt.user.entity.User;
+import com.example.springsecurityjwt.user.repository.RefreshTokenRedisRepository;
 import com.example.springsecurityjwt.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -20,7 +22,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final RefreshTokenRedisRepository refreshTokenRedisRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private static final Long REFRESH_TOKEN_EXP = Long.parseLong(System.getenv("JWT_REFRESH_TOKEN_EXP"));
 
     @Transactional(readOnly = true)
     public ResponseEntity<?> login(String userAgent, UserLoginReq userLoginReq) {
@@ -57,6 +61,11 @@ public class UserService {
         if (passwordEncoder.matches(rawPassword, user.getPassword())) {
             String accessToken = JwtProvider.createAccessToken(user);
             String refreshToken = JwtProvider.createRefreshToken(user);
+
+            // RefreshToken Redis DB 저장
+            RefreshTokenRedisReq refreshTokenRedisReq = new RefreshTokenRedisReq(refreshToken, user.getId(), REFRESH_TOKEN_EXP);
+
+            refreshTokenRedisRepository.save(refreshTokenRedisReq.toEntity());
 
             return ResponseEntity.ok().header(JwtProvider.ACCESS_TOKEN_HEADER, accessToken)
                     .header(JwtProvider.REFRESH_TOKEN_HEADER, refreshToken).body(new UserJoinResp(user));
