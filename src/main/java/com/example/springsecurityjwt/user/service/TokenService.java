@@ -33,24 +33,6 @@ public class TokenService {
 
         String accessToken = JwtProvider.createAccessToken(user);
 
-        return ResponseEntity.ok().header(JwtProvider.ACCESS_TOKEN_HEADER, accessToken).body(new NewAccessTokenResp(user));
-    }
-
-    @Transactional
-    public ResponseEntity<?> generateNewRefreshToken(String userAgent, NewAccessTokenReq newAccessTokenReq) {
-        User user = userRepository
-                .findById(newAccessTokenReq.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 유저가 없습니다"));
-
-        RefreshTokenRedis refreshTokenRedis = refreshTokenRedisRepository.findById((newAccessTokenReq.getUserId()))
-                .orElseThrow(() -> new IllegalArgumentException("Refresh 토큰의 유효기간이 만료되었거나 존재하지 않습니다"));
-
-        if (!refreshTokenRedis.getRefreshToken().equals(newAccessTokenReq.getRefreshToken())) {
-            ResponseEntity.badRequest().body("Refresh 토큰이 일치하지 않습니다. 다시 로그인해주세요.");
-        }
-
-        String accessToken = JwtProvider.createAccessToken(user);
-
         // RTR 방식 사용
         String newRefreshToken = JwtProvider.createRefreshToken(user);
         refreshTokenRedis.updateRefreshToken(newRefreshToken);
