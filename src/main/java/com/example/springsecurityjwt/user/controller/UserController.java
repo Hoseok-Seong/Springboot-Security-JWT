@@ -35,4 +35,9 @@ public class UserController {
                                     @RequestBody @Valid UserUpdateReq userUpdateReq) {
         return userService.update(myUserDetails, userUpdateReq);
     }
+
+    @PostMapping("/api/test")
+    public ResponseEntity<?> test(@AuthenticationPrincipal MyUserDetails myUserDetails) {
+        return ResponseEntity.ok().body("테스트 통과");
+    }
 }
