@@ -1,11 +1,14 @@
 package com.example.springsecurityjwt.user.service;
 
 import com.example.springsecurityjwt.global.jwt.JwtProvider;
+import com.example.springsecurityjwt.global.security.MyUserDetails;
 import com.example.springsecurityjwt.user.dto.RefreshTokenRedisReq;
 import com.example.springsecurityjwt.user.dto.UserJoinReq;
 import com.example.springsecurityjwt.user.dto.UserJoinResp;
 import com.example.springsecurityjwt.user.dto.UserLoginReq;
 import com.example.springsecurityjwt.user.dto.UserLoginResp;
+import com.example.springsecurityjwt.user.dto.UserUpdateReq;
+import com.example.springsecurityjwt.user.dto.UserUpdateResp;
 import com.example.springsecurityjwt.user.entity.User;
 import com.example.springsecurityjwt.user.repository.RefreshTokenRedisRepository;
 import com.example.springsecurityjwt.user.repository.UserRepository;
@@ -72,5 +75,15 @@ public class UserService {
         }
 
         throw new RuntimeException("회원가입 로직 실패");
+    }
+
+    @Transactional
+    public ResponseEntity<?> update(MyUserDetails myUserDetails, UserUpdateReq userUpdateReq) {
+        User user = userRepository.findById(myUserDetails.getUser().getId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 유저가 없습니다"));
+
+        user.updatePassword(userUpdateReq.getPassword());
+
+        return ResponseEntity.ok().body(new UserUpdateResp(user));
     }
 }

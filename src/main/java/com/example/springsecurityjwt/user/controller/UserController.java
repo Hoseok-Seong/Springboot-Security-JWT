@@ -1,7 +1,9 @@
 package com.example.springsecurityjwt.user.controller;
 
+import com.example.springsecurityjwt.global.security.MyUserDetails;
 import com.example.springsecurityjwt.user.dto.UserJoinReq;
 import com.example.springsecurityjwt.user.dto.UserLoginReq;
+import com.example.springsecurityjwt.user.dto.UserUpdateReq;
 import com.example.springsecurityjwt.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,5 +28,11 @@ public class UserController {
     @PostMapping("/join")
     public ResponseEntity<?> join(@RequestHeader("User-Agent") String userAgent, @RequestBody @Valid UserJoinReq userJoinReq) {
         return userService.join(userAgent, userJoinReq);
+    }
+
+    @PostMapping("/api/user/update")
+    public ResponseEntity<?> update(@AuthenticationPrincipal MyUserDetails myUserDetails,
+                                    @RequestBody @Valid UserUpdateReq userUpdateReq) {
+        return userService.update(myUserDetails, userUpdateReq);
     }
 }
