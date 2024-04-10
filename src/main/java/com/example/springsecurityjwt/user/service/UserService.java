@@ -37,7 +37,14 @@ public class UserService {
 
         if (passwordEncoder.matches(userLoginReq.getPassword(), user.getPassword())) {
             String accessToken = JwtProvider.createAccessToken(user);
-            return ResponseEntity.ok().header(JwtProvider.ACCESS_TOKEN_HEADER, accessToken).body(new UserLoginResp(user));
+            String refreshToken = JwtProvider.createRefreshToken(user);
+
+            // RefreshToken Redis DB 저장
+            RefreshTokenRedisReq refreshTokenRedisReq = new RefreshTokenRedisReq(refreshToken, user.getId(), REFRESH_TOKEN_EXP);
+            refreshTokenRedisRepository.save(refreshTokenRedisReq.toEntity());
+
+            return ResponseEntity.ok().header(JwtProvider.ACCESS_TOKEN_HEADER, accessToken)
+                    .header(JwtProvider.REFRESH_TOKEN_HEADER, refreshToken).body(new UserLoginResp(user));
         }
 
         throw new RuntimeException("로그인 로직 실패");
@@ -55,26 +62,12 @@ public class UserService {
             throw new DataIntegrityViolationException("사용자가 이미 존재합니다");
         }
 
-        userRepository.save(userJoinReq.toEntity());
-
-        User user = userRepository
-                .findByUsername(userJoinReq.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("해당 유저가 없습니다"));
-
-        if (passwordEncoder.matches(rawPassword, user.getPassword())) {
-            String accessToken = JwtProvider.createAccessToken(user);
-            String refreshToken = JwtProvider.createRefreshToken(user);
-
-            // RefreshToken Redis DB 저장
-            RefreshTokenRedisReq refreshTokenRedisReq = new RefreshTokenRedisReq(refreshToken, user.getId(), REFRESH_TOKEN_EXP);
-
-            refreshTokenRedisRepository.save(refreshTokenRedisReq.toEntity());
-
-            return ResponseEntity.ok().header(JwtProvider.ACCESS_TOKEN_HEADER, accessToken)
-                    .header(JwtProvider.REFRESH_TOKEN_HEADER, refreshToken).body(new UserJoinResp(user));
+        try {
+            User user = userRepository.save(userJoinReq.toEntity());
+            return ResponseEntity.ok().body(new UserJoinResp(user));
+        } catch (Exception e) {
+            throw new RuntimeException("회원가입 로직 실패");
         }
-
-        throw new RuntimeException("회원가입 로직 실패");
     }
 
     @Transactional
